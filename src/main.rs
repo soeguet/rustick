@@ -26,7 +26,7 @@ impl Default for RustickApp {
     fn default() -> Self {
         Self {
             screen: Screen::MainScreen,
-            settings: Settings { time: 60 },
+            settings: Settings { time: 10 },
             progress: Progress {
                 progress: 0.0,
                 last_ticker_update: Instant::now(),
@@ -41,30 +41,18 @@ impl RustickApp {
     }
 
     fn calculate_current_progress(&mut self) -> f32 {
-        if self.progress.progress == 0.0 {
-            self.progress.progress += 1.0;
-            return 0.0;
-        }
-
-        let x = self.progress.progress / self.settings.time as f32 * 100.0;
-        x.floor()
+        (self.progress.progress / self.settings.time as f32 * 100.0).floor() / 100.0
     }
 }
 
 impl eframe::App for RustickApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.request_repaint_after_secs(1.0);
-
-        if self.progress.last_ticker_update.elapsed() > Duration::from_millis(950) {
-            self.update_progress();
-            self.progress.last_ticker_update = Instant::now();
-        };
-
         // Looks better on 4k montior
         ctx.set_pixels_per_point(1.5);
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label(&self.progress.progress.to_string());
+            let formatted_label = format!("{}/{}", self.progress.progress, self.settings.time);
+            ui.label(formatted_label);
 
             let progress_bar = ProgressBar::new(self.calculate_current_progress())
                 .fill(Color32::BLUE)
@@ -85,19 +73,26 @@ impl eframe::App for RustickApp {
             }
         });
 
-        // This is how to go into continuous mode - uncomment this to see example of continuous mode
-        // ctx.request_repaint();
+        if self.progress.last_ticker_update.elapsed() > Duration::from_millis(950) {
+            self.update_progress();
+            self.progress.last_ticker_update = Instant::now();
+        };
+
+        if self.progress.progress > self.settings.time as f32 {
+            self.progress.progress = 0.0
+        }
+        ctx.request_repaint_after_secs(1.0);
     }
 }
 
 fn main() -> eframe::Result<()> {
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size((200.0, 50.0)),
+        viewport: egui::ViewportBuilder::default().with_inner_size((200.0, 100.0)),
         ..eframe::NativeOptions::default()
     };
 
     let app = RustickApp::default();
-    eframe::run_native("ticka", native_options, Box::new(|_cc| Ok(Box::new(app))))
+    eframe::run_native("rustick", native_options, Box::new(|_cc| Ok(Box::new(app))))
 }
 
 #[cfg(test)]
@@ -110,7 +105,7 @@ mod tests {
         app.progress.progress = 30.0;
         app.settings.time = 60;
         let progress = app.calculate_current_progress();
-        assert_eq!(progress, 50.0);
+        assert_eq!(progress, 0.50);
     }
     #[test]
     fn test_progress_calculation_one_third() {
@@ -118,6 +113,6 @@ mod tests {
         app.progress.progress = 20.0;
         app.settings.time = 60;
         let progress = app.calculate_current_progress();
-        assert_eq!(progress, 33.0);
+        assert_eq!(progress, 0.33);
     }
 }
