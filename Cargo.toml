@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 egui = "0.32.0"
 eframe = "0.32.0"
-rodio = "0.21.1"
+kira = "0.10.8"

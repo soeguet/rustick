@@ -93,7 +93,7 @@ impl eframe::App for RustickApp {
             }
             State::SettingsState => {}
             State::AudioState => {
-                self.audio_master.play_audio();
+                self.audio_master.run_audio();
                 self.state = State::MainState;
             }
         }

@@ -1,50 +1,48 @@
-use std::fs::File;
-use std::io::BufReader;
+use kira::sound::PlaybackState;
+use kira::{
+    AudioManager, AudioManagerSettings, DefaultBackend, sound::static_sound::StaticSoundData,
+};
 
-#[derive(Debug)]
 pub struct AudioMaster {
-    break_file: String,
-    // break_over_file: Decoder<BufReader<File>>,
+    audio_data: StaticSoundData,
 }
 
 impl Default for AudioMaster {
     fn default() -> Self {
+        let sound_data =
+            StaticSoundData::from_file("public/happy-message-ping-351298.mp3").unwrap();
+
         Self {
-            break_file: "public/happy-message-ping-351298.mp3".into(),
+            audio_data: sound_data,
         }
     }
 }
 
 impl AudioMaster {
-    pub fn play_audio(&self) {
-        // Get an output stream handle to the default physical sound device.
-        // Note that the playback stops when the stream_handle is dropped.
-        let stream_handle =
-            rodio::OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+    pub fn run_audio(&self) {
+        // Create an audio manager. This plays sounds and manages resources.
+        let mut manager =
+            AudioManager::<DefaultBackend>::new(AudioManagerSettings::default()).unwrap();
+        let result = manager
+            .play(self.audio_data.clone())
+            .expect("Could not load audio");
 
-        // Load a sound from a file, using a path relative to Cargo.toml
-        let file = BufReader::new(File::open(&self.break_file).unwrap());
-        // Note that the playback stops when the sink is dropped
-        let result = rodio::play(&stream_handle.mixer(), file);
-
-        match result {
-            Ok(n) => {
-                n.sleep_until_end();
-            }
-            Err(err) => {
-                println!("{}", err)
+        loop {
+            if result.state() != PlaybackState::Playing {
+                break;
             }
         }
     }
 }
 
+// add test
 #[cfg(test)]
 mod tests {
-    use crate::audio::AudioMaster;
+    use super::*;
 
     #[test]
-    fn test_progress_calculation_half() {
-        let master = AudioMaster::default();
-        master.play_audio();
+    fn test_audio_buffer_default() {
+        let audio_buffer = AudioMaster::default();
+        audio_buffer.run_audio();
     }
 }
