@@ -91,7 +91,7 @@ impl eframe::App for RustickApp {
             }
             State::SettingsState => {}
             State::AudioState => {
-                audio();
+                std::thread::spawn(audio);
                 self.state = State::MainState;
             }
         }
