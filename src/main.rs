@@ -1,6 +1,6 @@
 mod audio;
 
-use crate::audio::audio;
+use crate::audio::AudioMaster;
 use eframe::egui;
 use egui::{Color32, ProgressBar};
 use std::time::{Duration, Instant};
@@ -24,6 +24,7 @@ struct RustickApp {
     state: State,
     settings: Settings,
     progress: Progress,
+    audio_master: AudioMaster,
 }
 
 impl Default for RustickApp {
@@ -35,6 +36,7 @@ impl Default for RustickApp {
                 progress: 0.0,
                 last_ticker_update: Instant::now(),
             },
+            audio_master: AudioMaster::default(),
         }
     }
 }
@@ -91,7 +93,7 @@ impl eframe::App for RustickApp {
             }
             State::SettingsState => {}
             State::AudioState => {
-                std::thread::spawn(audio);
+                self.audio_master.play_audio();
                 self.state = State::MainState;
             }
         }
