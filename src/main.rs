@@ -16,13 +16,13 @@ struct Progress {
     last_ticker_update: Instant,
 }
 
-struct TickaApp {
+struct RustickApp {
     screen: Screen,
     settings: Settings,
     progress: Progress,
 }
 
-impl Default for TickaApp {
+impl Default for RustickApp {
     fn default() -> Self {
         Self {
             screen: Screen::MainScreen,
@@ -35,7 +35,7 @@ impl Default for TickaApp {
     }
 }
 
-impl TickaApp {
+impl RustickApp {
     fn update_progress(&mut self) {
         self.progress.progress += 1.0
     }
@@ -51,7 +51,7 @@ impl TickaApp {
     }
 }
 
-impl eframe::App for TickaApp {
+impl eframe::App for RustickApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.request_repaint_after_secs(1.0);
 
@@ -96,7 +96,7 @@ fn main() -> eframe::Result<()> {
         ..eframe::NativeOptions::default()
     };
 
-    let app = TickaApp::default();
+    let app = RustickApp::default();
     eframe::run_native("ticka", native_options, Box::new(|_cc| Ok(Box::new(app))))
 }
 
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_progress_calculation_half() {
-        let mut app = TickaApp::default();
+        let mut app = RustickApp::default();
         app.progress.progress = 30.0;
         app.settings.time = 60;
         let progress = app.calculate_current_progress();
@@ -114,7 +114,7 @@ mod tests {
     }
     #[test]
     fn test_progress_calculation_one_third() {
-        let mut app = TickaApp::default();
+        let mut app = RustickApp::default();
         app.progress.progress = 20.0;
         app.settings.time = 60;
         let progress = app.calculate_current_progress();
