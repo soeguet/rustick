@@ -1,10 +1,14 @@
+mod audio;
+
+use crate::audio::audio;
 use eframe::egui;
 use egui::{Color32, ProgressBar};
 use std::time::{Duration, Instant};
 
-enum Screen {
-    MainScreen,
-    SettingsScreen,
+enum State {
+    MainState,
+    SettingsState,
+    AudioState,
 }
 
 struct Settings {
@@ -17,7 +21,7 @@ struct Progress {
 }
 
 struct RustickApp {
-    screen: Screen,
+    state: State,
     settings: Settings,
     progress: Progress,
 }
@@ -25,7 +29,7 @@ struct RustickApp {
 impl Default for RustickApp {
     fn default() -> Self {
         Self {
-            screen: Screen::MainScreen,
+            state: State::MainState,
             settings: Settings { time: 10 },
             progress: Progress {
                 progress: 0.0,
@@ -61,14 +65,14 @@ impl eframe::App for RustickApp {
             ui.add(progress_bar);
 
             if ui.button("Go to Settings").clicked() {
-                self.screen = Screen::SettingsScreen;
+                self.state = State::SettingsState;
             }
 
-            if let Screen::SettingsScreen = self.screen {
+            if let State::SettingsState = self.state {
                 ui.label("Settings");
                 ui.add(egui::Slider::new(&mut self.settings.time, 0..=180).text("Duration"));
                 if ui.button("Back to Main Screen").clicked() {
-                    self.screen = Screen::MainScreen;
+                    self.state = State::MainState;
                 }
             }
         });
@@ -78,9 +82,20 @@ impl eframe::App for RustickApp {
             self.progress.last_ticker_update = Instant::now();
         };
 
-        if self.progress.progress > self.settings.time as f32 {
-            self.progress.progress = 0.0
+        match self.state {
+            State::MainState => {
+                if self.progress.progress > self.settings.time as f32 {
+                    self.state = State::AudioState;
+                    self.progress.progress = 0.0;
+                }
+            }
+            State::SettingsState => {}
+            State::AudioState => {
+                audio();
+                self.state = State::MainState;
+            }
         }
+
         ctx.request_repaint_after_secs(1.0);
     }
 }
