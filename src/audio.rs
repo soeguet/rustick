@@ -2,7 +2,11 @@ use kira::sound::PlaybackState;
 use kira::{
     AudioManager, AudioManagerSettings, DefaultBackend, sound::static_sound::StaticSoundData,
 };
+use std::cell::RefCell;
 use std::fmt;
+
+const INIT_AUDIO_PATH: &str = "public/new-notification-014-363678.mp3";
+const INIT_BREAK_AUDIO_PATH: &str = "public/snd_fragment_retrievewav-14728.mp3";
 
 #[derive(Debug)]
 pub struct AudioError {
@@ -23,28 +27,27 @@ pub struct CustomAudio {
 }
 
 pub struct AudioMaster {
-    pub(crate) main_audio: CustomAudio,
-    break_audio: CustomAudio,
+    pub main_audio: RefCell<CustomAudio>,
+    pub break_audio: RefCell<CustomAudio>,
 }
 
 impl Default for AudioMaster {
     fn default() -> Self {
-        let init_audio_path = "public/happy-message-ping-351298.mp3".to_owned();
+        let init_audio_path = INIT_AUDIO_PATH.to_owned();
         let sound_data = StaticSoundData::from_file(&init_audio_path).unwrap();
-        let main_audio = CustomAudio {
+        let main_audio = RefCell::new(CustomAudio {
             audio_data: sound_data,
             audio_path_int: String::new(),
             audio_path: init_audio_path,
-        };
+        });
 
-        let init_audio_path = "public/happy-message-ping-351298.mp3".to_owned();
-        let sound_data = StaticSoundData::from_file(&init_audio_path).unwrap();
-        let break_audio = CustomAudio {
-            audio_data: sound_data,
+        let init_break_audio_path = INIT_BREAK_AUDIO_PATH.to_owned();
+        let sound_break_data = StaticSoundData::from_file(&init_break_audio_path).unwrap();
+        let break_audio = RefCell::new(CustomAudio {
+            audio_data: sound_break_data,
             audio_path_int: String::new(),
-            audio_path: init_audio_path,
-        };
-
+            audio_path: init_break_audio_path,
+        });
         Self {
             main_audio,
             break_audio,
@@ -53,13 +56,27 @@ impl Default for AudioMaster {
 }
 
 impl AudioMaster {
-    pub fn run_audio(&self) {
+    pub fn run_main_audio(&self) {
         // Create an audio manager. This plays sounds and manages resources.
         let mut manager =
             AudioManager::<DefaultBackend>::new(AudioManagerSettings::default()).unwrap();
-        let result = manager
-            .play(self.main_audio.audio_data.clone())
-            .expect("Could not load audio");
+        let main_audio_ref = self.main_audio.borrow();
+        let cloned_data = main_audio_ref.audio_data.clone();
+        let result = manager.play(cloned_data).expect("Could not load audio");
+
+        loop {
+            if result.state() != PlaybackState::Playing {
+                break;
+            }
+        }
+    }
+    pub fn run_break_audio(&self) {
+        // Create an audio manager. This plays sounds and manages resources.
+        let mut manager =
+            AudioManager::<DefaultBackend>::new(AudioManagerSettings::default()).unwrap();
+        let break_audio_ref = self.break_audio.borrow();
+        let cloned_data = break_audio_ref.audio_data.clone();
+        let result = manager.play(cloned_data).expect("Could not load audio");
 
         loop {
             if result.state() != PlaybackState::Playing {
@@ -69,20 +86,22 @@ impl AudioMaster {
     }
 
     pub fn pre_settings_phase(&mut self) {
-        self.main_audio.audio_path_int = self.main_audio.audio_path.clone();
+        let x = self.main_audio.get_mut();
+        x.audio_path_int = x.audio_path.clone();
     }
 
-    pub fn set_main_audio_path(&mut self, new_audio_path: String) -> Result<(), AudioError> {
-        let result = StaticSoundData::from_file(&self.main_audio.audio_path);
+    pub fn set_main_audio_path(&mut self) -> Result<(), AudioError> {
+        let x = self.main_audio.get_mut();
+        let result = StaticSoundData::from_file(&x.audio_path);
 
         match result {
             Ok(n) => {
-                self.main_audio.audio_data = n;
-                self.main_audio.audio_path = new_audio_path;
+                x.audio_data = n;
+                x.audio_path = x.audio_path_int.clone();
                 Ok(())
             }
             Err(err) => Err(AudioError {
-                message: format!("could not load audio file: \"{}\"", new_audio_path),
+                message: format!("could not load audio file: \"{}\"", x.audio_path_int),
             }),
         }
     }
@@ -96,6 +115,6 @@ mod tests {
     #[test]
     fn test_audio_buffer_default() {
         let audio_buffer = AudioMaster::default();
-        audio_buffer.run_audio();
+        audio_buffer.run_main_audio();
     }
 }

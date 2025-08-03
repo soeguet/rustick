@@ -128,18 +128,19 @@ impl RustickApp {
 
             // main audio path
             ui.add_space(SPACING);
-            ui.label("Change time - Break");
+            ui.label("Change main audio path");
             ui.add(egui::TextEdit::singleline(
-                &mut self.audio_master.main_audio.audio_path,
+                &mut self.audio_master.main_audio.get_mut().audio_path,
             ));
             if ui.button("save new audio file").clicked() {
-                if self.audio_master.main_audio.audio_path
-                    != self.audio_master.main_audio.audio_path_int
-                {
-                    match self
-                        .audio_master
-                        .set_main_audio_path(self.audio_master.main_audio.audio_path_int.clone())
-                    {
+                let borrowed_main_audio = &self.audio_master.main_audio.get_mut();
+                let equal = borrowed_main_audio.audio_path != borrowed_main_audio.audio_path_int;
+
+                if equal {
+                    let ref_mut = self.audio_master.main_audio.get_mut();
+                    let result = self.audio_master.set_main_audio_path();
+
+                    match result {
                         Ok(_) => {
                             self.message =
                                 Some(("Changes were applied".to_string(), Instant::now()));
@@ -155,12 +156,41 @@ impl RustickApp {
             ui.add_space(SPACING);
             ui.separator();
 
-            // slider break
+            // slider for break
             ui.add_space(SPACING);
             ui.label("Change time - Break");
             ui.add(
                 egui::Slider::new(&mut self.settings.break_time, 0..=180).text("Break Duration"),
             );
+
+            // break audio path
+            ui.add_space(SPACING);
+            ui.label("Change main audio path");
+            ui.add(egui::TextEdit::singleline(
+                &mut self.audio_master.break_audio.get_mut().audio_path,
+            ));
+            if ui.button("save new audio file (break)").clicked() {
+                let equal = self.audio_master.break_audio.borrow().audio_path
+                    != self.audio_master.break_audio.borrow().audio_path_int;
+
+                if equal {
+                    let result = self.audio_master.set_main_audio_path();
+
+                    match result {
+                        Ok(_) => {
+                            self.message =
+                                Some(("Changes were applied".to_string(), Instant::now()));
+                        }
+                        Err(err) => {
+                            self.message = Some((format!("{}", err.message), Instant::now()));
+                        }
+                    }
+                } else {
+                    self.message = Some(("The path is the same...".to_string(), Instant::now()));
+                }
+            }
+            ui.add_space(SPACING);
+            ui.separator();
 
             ui.add_space(SPACING);
             ui.separator();
@@ -227,7 +257,6 @@ impl RustickApp {
 
 impl eframe::App for RustickApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        // Looks better on 4k montior
         ctx.set_pixels_per_point(1.5);
 
         match self.state {
@@ -243,14 +272,14 @@ impl eframe::App for RustickApp {
                 self.render_settings_screen(ctx);
             }
             State::AudioState => {
-                self.audio_master.run_audio();
-
                 match self.next_state {
                     State::MainState => {
+                        self.audio_master.run_main_audio();
                         self.state = State::MainState;
                         self.next_state = State::BreakState;
                     }
                     State::BreakState => {
+                        self.audio_master.run_break_audio();
                         self.state = State::BreakState;
                         self.next_state = State::MainState;
                     }
