@@ -100,7 +100,7 @@ impl AudioMaster {
                 x.audio_path = x.audio_path_int.clone();
                 Ok(())
             }
-            Err(err) => Err(AudioError {
+            Err(_) => Err(AudioError {
                 message: format!("could not load audio file: \"{}\"", x.audio_path_int),
             }),
         }

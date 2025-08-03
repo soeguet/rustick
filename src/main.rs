@@ -139,7 +139,6 @@ impl RustickApp {
                 let equal = borrowed_main_audio.audio_path != borrowed_main_audio.audio_path_int;
 
                 if equal {
-                    let ref_mut = self.audio_master.main_audio.get_mut();
                     let result = self.audio_master.set_main_audio_path();
 
                     match result {
@@ -220,7 +219,7 @@ impl RustickApp {
         });
     }
 
-    fn render_main_screen(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn render_main_screen(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(&ctx, |ui| {
             let formatted_label = format!("{}/{}", self.progress.progress, self.settings.time);
             ui.label(formatted_label);
