@@ -12,6 +12,8 @@ const SETTINGS_SCREEN_HEIGHT: f32 = 500.0;
 const TICKER_START_COUNT: f32 = 0.0;
 const TICKER_INTERVAL: f32 = 1.0;
 const SPACING: f32 = 5.0;
+const INITIAL_BREAK_TIME: u32 = 5;
+const INITIAL_TIME: u32 = 60;
 
 enum State {
     MainState,
@@ -47,8 +49,8 @@ impl Default for RustickApp {
             state: State::MainState,
             next_state: State::BreakState,
             settings: Settings {
-                time: 10,
-                break_time: 5,
+                time: INITIAL_TIME,
+                break_time: INITIAL_BREAK_TIME,
                 prev_state: State::MainState,
             },
             progress: Progress {
